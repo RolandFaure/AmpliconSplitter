@@ -318,17 +318,17 @@ def check_input_assembly(assembly_file, robust_assembly_file):
 
 def main():
 
-    print("\n\t******************\n\t*                *\n\t*  Hairsplitter  *\n\t*    Welcome!    *\n\t*                *\n\t******************\n")
+    print("\n\t******************\n\t*                *\n\t*  AmpliconSplitter  *\n\t*    Welcome!    *\n\t*                *\n\t******************\n")
     sys.stdout.flush()
 
     if len(sys.argv) > 1 and (sys.argv[1] == "-v" or sys.argv[1] == "--version"):
-        print("HairSplitter v"+__version__+" ("+__github__+"). Last update: "+__date__)
+        print("AmpliconSplitter v"+__version__+" ("+__github__+"). Last update: "+__date__)
         sys.exit(0)
 
     args = parse_args()
     nb_threads = args.threads
     #path to src folder can be imputed from the first argument of the command line
-    path_to_src = sys.argv[0].split("hairsplitter.py")[0]+"src/"
+    path_to_src = sys.argv[0].split("AmpliconSplitter.py")[0]+"src/"
     path_to_minimap2 = "minimap2"
     path_to_minigraph = "minigraph"
     path_to_racon = "racon"
@@ -357,7 +357,7 @@ def main():
     path_graphunzip = path_to_python + " " +path_to_src + "GraphUnzip/graphunzip.py"
     path_determine_multiplicity = path_to_python + " " + path_to_src + "GraphUnzip/determine_multiplicity.py"
 
-    logFile = args.output.rstrip('/') + "/hairsplitter.log"
+    logFile = args.output.rstrip('/') + "/AmpliconSplitter.log"
 
     #check if --resume was used. If so, fetch the command line in the output folder
     if continue_from_previous_run :
@@ -396,15 +396,15 @@ def main():
         print("ERROR: Quality filtering cannot be applied to FASTA input. Please provide FASTQ input for quality filtering.")
         sys.exit(1)
 
-    #output the command line used to run HairSplitter and the version in the log file
+    #output the command line used to run AmpliconSplitter and the version in the log file
     f = open(logFile, "w")
     f.write(" ".join(sys.argv)+"\n")
-    f.write("HairSplitter v"+__version__+" ("+__github__+"). Last update: "+__date__+"\n")
+    f.write("AmpliconSplitter v"+__version__+" ("+__github__+"). Last update: "+__date__+"\n")
     f.close()
 
-    #print the command line used to run HairSplitter
+    #print the command line used to run AmpliconSplitter
     print(" ".join(sys.argv))
-    print("HairSplitter v"+__version__+" ("+__github__+"). Last update: "+__date__)
+    print("AmpliconSplitter v"+__version__+" ("+__github__+"). Last update: "+__date__)
     if args.version:
         sys.exit(0)
 
@@ -446,7 +446,7 @@ def main():
 
     #check the read file and unzip it if needed (converting it to fasta if in fastq)
     if readsFile[-3:] == ".gz":
-        print("\n===== STAGE 0: Decompressing input reads [", datetime.datetime.now() ,"]\n\n")
+        print("\n===== STAGE 1: Decompressing input reads [", datetime.datetime.now() ,"]\n\n")
         if continue_from_previous_run and os.path.exists(tmp_dir + "/reads.fasta") :
             print(" - Already decompressed reads file found from previous run")
             readsFile = tmp_dir + "/reads.fasta"
@@ -487,7 +487,7 @@ def main():
 
     # 0.2 Filter reads by quality if demanded
     if args.min_read_quality > 0 and (readsFile.endswith(".fastq") or readsFile.endswith(".fq")):
-        print("\n===== STAGE 0.2: Filtering reads by quality [", datetime.datetime.now(), "]\n")
+        print("\n===== STAGE 1.2: Filtering reads by quality [", datetime.datetime.now(), "]\n")
         filtered_reads = tmp_dir + "/filtered_reads.fastq"
         def filter_reads_by_quality(input_file, output_file, min_quality):
             with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
@@ -506,97 +506,21 @@ def main():
         filter_reads_by_quality(readsFile, filtered_reads, args.min_read_quality)
         readsFile = filtered_reads
 
-    # 1. Clean the assembly using correct_structural_errors.py
-    print("\n===== STAGE 1: Cleaning graph of hidden structural variations [", datetime.datetime.now() ,"]\n\n")
-    print(" When several haplotypes are present, it is common that big structural variations between the haplotypes go unnoticed by the assembler. Here, HairSplitter corrects the assembly"
-        " by making sure that all reads align end-to-end of the assembly. This module is now a standalone tool available at github.com/rolandfaure/genometailor\n")
-    sys.stdout.flush()
     
     new_assembly = tmp_dir + "/cleaned_assembly.gfa"
     N50 = 0
-    if not skip_minigraph :
-
-        if continue_from_previous_run and os.path.exists(new_assembly) :
-            print(" - Already cleaned assembly found from previous run")
-            readsFile = tmp_dir + "/reads.fa"
-        else:
-            continue_from_previous_run = False
-            command = path_GenomeTailor + " -i " + robust_assembly + " -o " + new_assembly + " -r " + readsFile + " -t " + str(nb_threads) \
-                + " -e " + tmp_dir + "/assembly_breakpoints.txt -m correct --minimap2 " + path_to_minimap2 + " --minigraph " + path_to_minigraph + " --racon " + path_to_racon + " --path-to-raven " + path_to_raven \
-                + " -d " + tmp_dir + "/reads.fa -p " + tmp_dir + " --path-to-bluntify " + path_to_src + "HS_GenomeTailor/bluntify.py > " + tmp_dir + "/logGenomeTailor.txt 2>&1"
-            readsFile = tmp_dir + "/reads.fa"
-            # command = "python " + path_to_src + "GraphUnzip/correct_structural_errors.py -a " + gfaAssembly + " -o " + new_assembly + " -r " + readsFile + " -t " \
-            #     + str(nb_threads) + " --minimap2 " + args.path_to_minimap2 + " --minigraph " + args.path_to_minigraph + " --racon " + args.path_to_racon \
-            #     + " --folder " + tmp_dir
-            print(" Running: ", command)
-            #write in the log file where to look in case of error
-            f = open(logFile, "a")
-            f.write("==== STAGE 1: Cleaning graph of hidden structural variations   ["+str(datetime.datetime.now())+"]\n")
-            f.write(command)
-            f.close()
-            res_clean = os.system(command)
-            if res_clean != 0:
-                print("ERROR: Cleaning the assembly failed. Was trying to run: " + command)
-                sys.exit(1)
-
-            print(" - Improved alignment of reads on assembly. The improved assembly is stored in " + new_assembly)
-
-        #now check if the improved assembly is not too complicated, else fall back on the original assembly
-        #the metric is : did the N50 fall below 10kb ?
-        f = open(new_assembly, "r")
-        contigs_length = []
-        for line in f :
-            if "S" == line[0] :
-                contigs_length.append(len(line.split("\t")[2]))
-        f.close()
-        contigs_length.sort(reverse=True)
-        cumul = 0
-        total_length = sum(contigs_length)
-        for l in contigs_length :
-            cumul += l
-            if cumul > total_length/2 :
-                N50 = l
-                break
-
-    if N50 < 10000 and not skip_minigraph:
-        print(" - WARNING : The corrected assembly has quite a low N50, you might want to re-run the pipeline without the assembly correction step")
-    elif skip_minigraph :
-        f = open(logFile, "a")
-        f.write("==== STAGE 1: Cleaning graph of hidden structural variations   ["+str(datetime.datetime.now())+"]\n")
-        f.write(" - Skipping the assembly correction step because --correct-assembly was not used")
-        f.close()
-        print(" - Skipping the assembly correction step because --correct-assembly was not used")
-        new_assembly = robust_assembly
+    
+    f = open(logFile, "a")
+    f.close()
+    new_assembly = robust_assembly
 
     # 2. Map the reads on the assembly
     print("\n===== STAGE 2: Aligning reads on the reference   [", datetime.datetime.now() ,"]\n")
     sys.stdout.flush()
 
-    # 2.1. Cut the contigs in chunks of 300000bp to avoid memory issues
-    print(" - Cutting the contigs in chunks of 300000bp to avoid memory issues")
-    command = path_cut_gfa + " -a " + new_assembly + " -l 300000 -o " + tmp_dir + "/cut_assembly.gfa"
-    #write in the log file the time at which the alignment starts
-    f = open(logFile, "a")
-    f.write("\n==== STAGE 2: Aligning reads on the reference   ["+str(datetime.datetime.now())+"]\n")
-    f.write(" - Cutting the contigs in chunks of 300000bp to avoid memory issues\n")
-    f.write(command)
-    f.write("\n")
-    f.close()
-
-    res_cut_gfa = os.system(command)
-    if res_cut_gfa != 0 :
-        print("ERROR: cut_gfa.py failed. Was trying to run: " + command)
-        sys.exit(1)
-    new_assembly = tmp_dir + "/cut_assembly.gfa"
-
     # 2.2 Convert the assembly in fasta format
-    print(" - Converting the assembly in fasta format")
     fastaAsm = tmp_dir + "/cleaned_assembly.fasta"
     command = path_gfa2fa + " " + new_assembly + " > " + fastaAsm
-    f = open(logFile, "a")
-    f.write(" - Converting the assembly in fasta format\n")
-    f.write(command)
-    f.close()
     res_gfa2fasta = os.system(command)
     if res_gfa2fasta != 0 :
         print("ERROR: gfa2fa failed UUE. Was trying to run: " + command)
@@ -739,7 +663,7 @@ def main():
         #write in the log file that read separation went smoothly
         f = open(logFile, "a")
         f.write("STAGE 4: Read separation computed, separate_reads exited successfully. Groups of reads are stored in "+tmp_dir+"/reads_haplo.gro. Explanation of the format\
-                can be found in the doc/README.md, and a synthetic summary is in hairsplitter_summary.txt")
+                can be found in the doc/README.md, and a synthetic summary is in AmpliconSplitter_summary.txt")
 
     print("\n===== STAGE 5: Creating all the new contigs   [", datetime.datetime.now() ,"]\n\n This can take time, as we need to polish every new contig using Racon")
     sys.stdout.flush()
@@ -797,7 +721,7 @@ def main():
     print("\n===== STAGE 6: Untangling (~scaffolding) the new assembly graph to improve contiguity   [", datetime.datetime.now() ,"]\n")
     sys.stdout.flush()
 
-    outfile = args.output.rstrip('/') + "/hairsplitter_final_assembly.gfa"
+    outfile = args.output.rstrip('/') + "/AmpliconSplitter_final_assembly.gfa"
 
     sort_on_coverage = ""
     if amplicon == "1" :
@@ -822,22 +746,22 @@ def main():
     
     #write in the log file that untangling went smoothly
     f = open(logFile, "a")
-    f.write("STAGE 7: Untangling computed, GraphUnzip exited successfully. The new assembly is stored in "+outfile+". To see how the contigs were merged, check out hairsplitter_summary.txt.")
+    f.write("STAGE 7: Untangling computed, GraphUnzip exited successfully. The new assembly is stored in "+outfile+". To see how the contigs were merged, check out AmpliconSplitter_summary.txt.")
     f.close()
 
-    print( "\n *To see in more details what supercontigs were created with GraphUnzip, check the hairsplitter_summary.txt*\n")
+    print( "\n *To see in more details what supercontigs were created with GraphUnzip, check the AmpliconSplitter_summary.txt*\n")
     output_file = "output.txt"
     o = open(output_file, "a")
     o.write("\n\n *****Linking the created contigs***** \n\nLeft, the name of the produced supercontig. Right, the list of new contigs with a suffix -0, -1...indicating the copy of the contig, linked with _ \n\n")
     o.close()
     command = "cat output.txt "+args.output +"/supercontigs.txt > output2.txt 2> "+args.output+"/tmp/trash.txt"
     os.system(command)
-    command =  "mv output2.txt "+args.output+"/hairsplitter_summary.txt && rm supercontigs.txt output.txt 2> "+args.output+"/tmp/trash.txt";
+    command =  "mv output2.txt "+args.output+"/AmpliconSplitter_summary.txt && rm supercontigs.txt output.txt 2> "+args.output+"/tmp/trash.txt";
     os.system(command)
 
     #write in the log file that the summary file was created
     f = open(logFile, "a")
-    f.write("STAGE 7: Summary file created, hairsplitter_summary.txt is stored in "+args.output)
+    f.write("STAGE 7: Summary file created, AmpliconSplitter_summary.txt is stored in "+args.output)
     f.close()
 
     
@@ -855,11 +779,11 @@ def main():
             print("ERROR: Could not remove temporary files. Was trying to run: " + command)
             #sys.exit(1)
 
-    print("\n===== HairSplitter finished! =====   [", datetime.datetime.now() ,"]\n")
+    print("\n===== AmpliconSplitter finished! =====   [", datetime.datetime.now() ,"]\n")
 
-    #write in the log file that hairsplitter finished
+    #write in the log file that AmpliconSplitter finished
     f = open(logFile, "a")
-    f.write("\n==== HairSplitter finished!   ["+str(datetime.datetime.now())+"]\n")
+    f.write("\n==== AmpliconSplitter finished!   ["+str(datetime.datetime.now())+"]\n")
     f.close()
 
 if __name__ == "__main__":
