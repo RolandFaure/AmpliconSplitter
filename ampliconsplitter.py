@@ -9,7 +9,7 @@ Author: Roland Faure
 
 __author__ = "Roland Faure"
 __license__ = "GPL3"
-__version__ = "1.0.0"
+__version__ = "1.9.22"
 __date__ = "2025-04-17"
 __maintainer__ = "Roland Faure"
 __email__ = "roland.faure@pasteur.fr"
@@ -27,7 +27,6 @@ def parse_args(args_string=None):
     parser.add_argument("-r", "--ref", help="Reference amplicon(s) to separate in several amplicon(s) (required)", required=True)
     parser.add_argument("-f", "--fastq", help="Sequencing reads fastq or fasta (required)", required=True)
     parser.add_argument("-p", "--polisher", help="{racon, medaka} medaka is more accurate but much slower [racon]", default="racon", type=str)
-    parser.add_argument("--correct-assembly", help="Correct structural errors in the input assembly (time-consuming)", action="store_true")
     parser.add_argument("-t", "--threads", help="Number of threads [1]", default=1, type=int)
     parser.add_argument("-o", "--output", help="Output directory", required=True)
     parser.add_argument("-u", "--rescue_snps", help="Consider automatically as true all SNPs shared by proportion u of the reads [0.33]", default=0.33, type=float, required=False)
@@ -37,7 +36,6 @@ def parse_args(args_string=None):
     parser.add_argument("-F", "--force", help="Force overwrite of output folder if it exists", action="store_true")
     parser.add_argument("-l", "--low-memory", help="Turn on the low-memory mode (at the expense of speed)", action="store_true")
     parser.add_argument("--no_clean", help="Don't clean the temporary files", action="store_true")
-    parser.add_argument("--path_to_minigraph", help="Path to the executable minigraph [minigraph]", default="minigraph", type=str)
     parser.add_argument("--path_to_medaka", help="Path to the executable medaka [medaka]", default="medaka", type=str)
     parser.add_argument("--path_to_python", help="Path to python [python]", default="python", type=str)
     parser.add_argument("--path_to_raven", help="Path to raven [raven]", default="raven", type=str)
@@ -54,7 +52,7 @@ def parse_args(args_string=None):
 
 
 def check_dependencies(tmp_dir, minimap2, minigraph, racon, medaka, polisher, samtools, path_to_src, path_to_python, skip_minigraph\
-                       , path_GenomeTailor, path_cut_gfa, path_fa2gfa, path_gfa2fa, path_call_variants, path_separate_reads, path_create_new_contigs\
+                       , path_fa2gfa, path_gfa2fa, path_call_variants, path_separate_reads, path_create_new_contigs\
                         , path_determine_multiplicity,  path_graphunzip\
                         , path_raven):
 
@@ -169,33 +167,6 @@ def check_dependencies(tmp_dir, minimap2, minigraph, racon, medaka, polisher, sa
         print("ERROR: Some dependencies could not run. Check the path to the executables.")
         sys.exit(1)
 
-    #now check the path to our own executable, to make sure the installation ran smoothly
-    command = path_GenomeTailor + " --version > "+tmp_dir+"/dependancies_log.txt 2> "+tmp_dir+"/dependancies_log.txt"
-    GenomeTailor_run = os.system(command)
-    if GenomeTailor_run != 0:
-        command = "HS_GenomeTailor --version > "+tmp_dir+"/dependancies_log.txt 2> "+tmp_dir+"/dependancies_log.txt"
-        GenomeTailor_run = os.system(command)
-        if GenomeTailor_run != 0:
-            print("ERROR: GenomeTailor could not run. Problem in the installation.")
-            print("Was trying to run first: " + path_GenomeTailor + " --version > "+tmp_dir+"/dependancies_log.txt 2> "+tmp_dir+"/dependancies_log.txt")
-            print("Was trying to run: " + command)
-            sys.exit(1)
-        else:
-            path_GenomeTailor = "HS_GenomeTailor"
-
-    command = path_cut_gfa + " -h > "+tmp_dir+"/dependancies_log.txt 2> "+tmp_dir+"/dependancies_log.txt"
-    cut_gfa_run = os.system(command)
-    if cut_gfa_run != 0:
-        command = "cut_gfa.py -h > "+tmp_dir+"/dependancies_log.txt 2> "+tmp_dir+"/dependancies_log.txt"
-        cut_gfa_run = os.system(command)
-        if cut_gfa_run != 0:
-            print("ERROR: cut_gfa.py could not run. Problem in the installation.")
-            print("Was trying to run first: " + path_cut_gfa + " --help > "+tmp_dir+"/dependancies_log.txt 2> "+tmp_dir+"/dependancies_log.txt")
-            print("Was trying to run: " + command)
-            sys.exit(1)
-        else:  
-            path_cut_gfa = "cut_gfa.py"
-
     command = path_fa2gfa + " --version > "+tmp_dir+"/dependancies_log.txt 2> "+tmp_dir+"/dependancies_log.txt"
     fa2gfa_run = os.system(command)
     if fa2gfa_run != 0:
@@ -203,7 +174,8 @@ def check_dependencies(tmp_dir, minimap2, minigraph, racon, medaka, polisher, sa
         fa2gfa_run = os.system(command)
         if fa2gfa_run != 0:
             print("ERROR: fa2gfa could not run. Problem in the installation.")
-            print("Was trying to run: " + command)
+            print("Was trying to run: " + command, " and before that tried: ", path_fa2gfa + " --version > "+tmp_dir+"/dependancies_log.txt 2> "+tmp_dir+"/dependancies_log.txt")
+
             sys.exit(1)
         else:
             path_fa2gfa = "HS_fa2gfa"
@@ -283,7 +255,7 @@ def check_dependencies(tmp_dir, minimap2, minigraph, racon, medaka, polisher, sa
         else:
             path_determine_multiplicity = "determine_multiplicity.py"
 
-    return path_GenomeTailor, path_cut_gfa, path_fa2gfa, path_gfa2fa, path_call_variants, path_separate_reads, path_create_new_contigs, path_determine_multiplicity, path_graphunzip
+    return path_fa2gfa, path_gfa2fa, path_call_variants, path_separate_reads, path_create_new_contigs, path_determine_multiplicity, path_graphunzip
 
 #convert the gfa assembly if it contains non-capital letters, -, and output a warning if other characters are present
 def check_input_assembly(assembly_file, robust_assembly_file):
@@ -318,7 +290,7 @@ def check_input_assembly(assembly_file, robust_assembly_file):
 
 def main():
 
-    print("\n\t******************\n\t*                *\n\t*  AmpliconSplitter  *\n\t*    Welcome!    *\n\t*                *\n\t******************\n")
+    print("\n\t********************\n\t*                  *\n\t* AmpliconSplitter *\n\t*     Welcome!     *\n\t*                  *\n\t********************\n")
     sys.stdout.flush()
 
     if len(sys.argv) > 1 and (sys.argv[1] == "-v" or sys.argv[1] == "--version"):
@@ -328,7 +300,7 @@ def main():
     args = parse_args()
     nb_threads = args.threads
     #path to src folder can be imputed from the first argument of the command line
-    path_to_src = sys.argv[0].split("AmpliconSplitter.py")[0]+"src/"
+    path_to_src = sys.argv[0].split("ampliconsplitter.py")[0]+"src/"
     path_to_minimap2 = "minimap2"
     path_to_minigraph = "minigraph"
     path_to_racon = "racon"
@@ -338,17 +310,14 @@ def main():
     tmp_dir = args.output.rstrip('/') + "/tmp"
     path_to_python = args.path_to_python
     low_memory = args.low_memory
-    skip_minigraph = not args.correct_assembly
-    rarest_strain_abundance = args.rarest_strain_abundance
-    minimap2_params = args.minimap2_params
-    haploid_coverage = float(args.haploid_coverage)
+    rarest_strain_abundance = 0
+    haploid_coverage = 0.0
     continue_from_previous_run = args.resume
     clean_tmp = not args.no_clean
     technology = "amplicon"
     automatic_snp_threshold = args.rescue_snps
+    skip_minigraph = True
 
-    path_GenomeTailor = path_to_src + "build/HS_GenomeTailor/HS_GenomeTailor"
-    path_cut_gfa = path_to_python + " " + path_to_src + "cut_gfa.py"
     path_fa2gfa = path_to_src + "build/HS_fa2gfa"
     path_gfa2fa = path_to_src + "build/HS_gfa2fa"
     path_call_variants = path_to_src + "build/HS_call_variants"
@@ -370,11 +339,10 @@ def main():
         f.close()
         #check if the command is the same as the one used to run the script (e.g. same parameters, except --resume)
         args_resume = parse_args(args_string=command)
-        if args_resume.assembly != args.assembly or args_resume.fastq != args.fastq or args_resume.haploid_coverage != args.haploid_coverage \
-            or args_resume.use_case != args.use_case or args_resume.polisher != args.polisher or args_resume.threads != args.threads \
+        if args_resume.ref != args.ref or args_resume.fastq != args.fastq or args_resume.haploid_coverage != args.haploid_coverage \
+            or args_resume.polisher != args.polisher or args_resume.threads != args.threads \
             or args_resume.output != args.output or args_resume.version != args.version or args_resume.debug != args.debug \
-            or args_resume.correct_assembly != args.correct_assembly or args_resume.low_memory != args.low_memory or args_resume.no_clean != args.no_clean \
-            or args_resume.rarest_strain_abundance != args.rarest_strain_abundance or args_resume.minimap2_params != args.minimap2_params \
+            or args_resume.low_memory != args.low_memory or args_resume.no_clean != args.no_clean \
             or args_resume.path_to_medaka != args.path_to_medaka \
             or args_resume.path_to_python != args.path_to_python \
             or args_resume.path_to_raven != args.path_to_raven :
@@ -424,8 +392,8 @@ def main():
         os.mkdir(tmp_dir)
 
     # check if input files exist
-    if not os.path.exists(args.assembly):
-        print("ERROR: not found assembly (" + args.assembly + ")")
+    if not os.path.exists(args.ref):
+        print("ERROR: not found assembly (" + args.ref + ")")
         sys.exit(1)
     if not os.path.exists(args.fastq):
         print("ERROR: not found fastq file (" + args.fastq + ")")
@@ -436,10 +404,10 @@ def main():
         sys.exit(1)
 
     #check the dependencies
-    path_GenomeTailor, path_cut_gfa, path_fa2gfa, path_gfa2fa, path_call_variants, path_separate_reads, path_create_new_contigs, path_determine_multiplicity, path_graphunzip =\
+    path_fa2gfa, path_gfa2fa, path_call_variants, path_separate_reads, path_create_new_contigs, path_determine_multiplicity, path_graphunzip =\
         check_dependencies(tmp_dir, path_to_minimap2, path_to_minigraph, path_to_racon, \
                        args.path_to_medaka, args.polisher, path_to_samtools, path_to_src, \
-                        path_to_python, skip_minigraph, path_GenomeTailor, path_cut_gfa, path_fa2gfa, \
+                        path_to_python, skip_minigraph, path_fa2gfa, \
                         path_gfa2fa, path_call_variants, path_separate_reads, path_create_new_contigs, \
                         path_determine_multiplicity,
                         path_graphunzip, path_to_raven)
@@ -467,12 +435,12 @@ def main():
     # run the pipeline
 
     # 0. Convert the assembly to gfa if needed
-    if args.assembly[-3:] == "gfa":
-        gfaAssembly = args.assembly
-    elif args.assembly[-5:] == "fasta" or args.assembly[-2:] == "fa" or args.assembly[-3:]=="fna":
+    if args.ref[-3:] == "gfa":
+        gfaAssembly = args.ref
+    elif args.ref[-5:] == "fasta" or args.ref[-2:] == "fa" or args.ref[-3:]=="fna":
         gfaAssembly = tmp_dir + "/assembly.gfa"
         if not continue_from_previous_run or not os.path.exists(tmp_dir + "/assembly.gfa") :
-            command = path_fa2gfa + " " + args.assembly + " > " + gfaAssembly
+            command = path_fa2gfa + " " + args.ref + " > " + gfaAssembly
             res_fasta2gfa = os.system(command)
             if res_fasta2gfa != 0:
                 print("ERROR: Conversion from fasta to gfa failed while running the command:\n" + command)
@@ -544,12 +512,9 @@ def main():
         print(" - Aligning the reads on the assembly")
 
         #run minimap but do not store the sequences, they are still in the file of reads
-        command = path_to_minimap2 + " " + fastaAsm + " " + readsFile + " " + techno_flag + " -a --secondary=no -M 0.05 -Y -t "+ str(nb_threads) + " " + minimap2_params \
+        command = path_to_minimap2 + " " + fastaAsm + " " + readsFile + " " + techno_flag + " -a --secondary=no -M 0.05 -Y -t "+ str(nb_threads) \
             + " 2> "+tmp_dir+"/logminimap.txt | awk 'BEGIN {FS=\"\t\"; OFS=\"\t\"} {a=length($10) ; $10=\"*\"; $11=\"*\"; printf $0; printf\"\tLN:i:\"; print a;}' > " + reads_on_asm + " 2> "+tmp_dir+"/logminimap.txt" 
-        # command = path_to_minimap2 + " " + fastaAsm + " " + readsFile + " " + techno_flag + " -a --secondary=no -M 0.05 -Y -t "+ str(nb_threads) + " " + minimap2_params \
-        #     + " 2> "+tmp_dir+"/logminimap.txt | awk 'BEGIN {FS=\"\t\"; OFS=\"\t\"} {if (NF>=10) {a=length($10); printf $0; printf\"\tLN:i:\"; print a;} else print;}' > " + reads_on_asm + " 2> "+tmp_dir+"/logminimap.txt" 
-        #command = path_to_minimap2 + " " + fastaAsm + " " + readsFile + " " + techno_flag + " -a --secondary=no -M 0.05 -Y -t "+ str(nb_threads) + " " + minimap2_params + " 2> "+tmp_dir+"/logminimap.txt > " + reads_on_asm + " 2> "+tmp_dir+"/logminimap.txt" 
-
+        
         print(" - Running minimap with command line:\n     " , command , "\n   The log of minimap2 can be found at "+tmp_dir+"/logminimap.txt")
         #write in the log file the time at which the alignment starts
         f = open(logFile, "a")
@@ -721,12 +686,12 @@ def main():
     print("\n===== STAGE 6: Untangling (~scaffolding) the new assembly graph to improve contiguity   [", datetime.datetime.now() ,"]\n")
     sys.stdout.flush()
 
-    outfile = args.output.rstrip('/') + "/AmpliconSplitter_final_assembly.gfa"
+    outfile = args.output.rstrip('/') + "/AmpliconSplitter_final_amplicons.gfa"
 
     sort_on_coverage = ""
     if amplicon == "1" :
         sort_on_coverage = " -x"
-    command = path_graphunzip + " unzip -R -e -l " + gaffile + " -g " + zipped_GFA + simply + " -o " + outfile + " -r " + readsFile + " -t " + str(nb_threads) + sort_on_coverage \
+    command = path_graphunzip + " unzip -R -e -l " + gaffile + " -g " + zipped_GFA + " -o " + outfile + " -r " + readsFile + " -t " + str(nb_threads) + sort_on_coverage \
           + " 2>"+tmp_dir+"/logGraphUnzip.txt >"+tmp_dir+"/logGraphUnzip.txt"
     #write in the log file the time at which the untangling starts
     f = open(logFile, "a")
@@ -773,7 +738,19 @@ def main():
         sys.exit(1)
 
     if clean_tmp :
-        command = "rm -r " + reads_on_asm + " " + tmp_dir + "/variants.col " + tmp_dir + "/variants.vcf " + tmp_dir + "/reads_haplo.gro " + tmp_dir + "/ploidy.txt " + tmp_dir + "/reads.fasta " + tmp_dir + "/reads_on_new_contig.gaf " 
+        # Remove temporary files if they exist
+        files_to_remove = [
+            reads_on_asm,
+            tmp_dir + "/variants.col",
+            tmp_dir + "/variants.vcf",
+            tmp_dir + "/reads_haplo.gro",
+            tmp_dir + "/ploidy.txt",
+            tmp_dir + "/reads.fasta",
+            tmp_dir + "/reads_on_new_contig.gaf",
+        ]
+        for file_path in files_to_remove:
+            if os.path.exists(file_path):
+                os.remove(file_path)
         res_clean = os.system(command)
         if res_clean != 0:
             print("ERROR: Could not remove temporary files. Was trying to run: " + command)
