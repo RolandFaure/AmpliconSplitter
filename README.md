@@ -1,17 +1,4 @@
-![HS_logo](HS_logo.png)
-
-Splits contigs into their different haplotypes (or repeats into their different versions).
-
-*For developers working on similar problems:* HairSplitter is puposefully built as a series of modules that could be integrated in other software. See the [How does it work section](#work) and do not hesitate to contact me.
-
-# What is Hairsplitter ?
-
-`Hairsplitter` takes as input an assembly (obtained by any means) and the long reads (including high-error rate long reads) used to build this assembly. For each contig it checks if the contig was built using reads from different haplotypes/regions. If it was, `Hairsplitter` separates the reads into as many groups as necessary and computes the different versions (e.g. alleles) of the contig actually present in the genome. It outputs a new assembly, where different versions of contigs are not collapsed into one but assembled separately.
-
-# Why is it useful ?
-
-`Hairsplitter` can be used to refine a metagenomic assembly. Assemblers commonly collapse closely related strains as on single genome. HairSplitter can recover the lost strains. The uncollapsed parts of the assembly are left as is.
-`HairSplitter` is also useful for single-organism assembly, especially if you are trying to obtain a phased assembly. The main advantage of `Hairsplitter` compared to other techniques is that it is totally parameter-free. Most importantly, it does not requires to know the ploidy of the organism, and can infer different ploidies corresponding to different contigs. It can thus be used just as well on haploid assemblies (to improve the assembly of duplications) as on complex allotetraploids (to assemble separately the haplotypes). Just run the assembly through!
+Sometimes, highly similar amplicons get reported as a single collapsed amplicon. AmpliconSplitter splits these amplicons to recover all the amplicons. AmpliconSplitter is based on [HairSplitter](github.com/rolandfaure/hairsplitter)
 
 # Installation
 
@@ -139,25 +126,9 @@ options:
  
  <a name="work">
 </a>
-
-# How does it work ?
-
-HairSplitter is organized as series of modules, some of these modules being of independant interest. The full documentation can be found in the doc/ folder.
-
-1. *Cleaning the assembly* Ideally, the assembly would be purged of all assembly errors. In practice, ensure there is no over-duplication by deleting unconnected contigs that align very well on other contigs.
-
-2. *Calling variants* Variants are called using an alignment of the reads on the assembly. For now, a basic pileup is used. Calling variants in a metagenomic context is hard: favor calling false variants over missing true variants - the false variants will be filtered afterward.
-
-3. *Filtering variants* This step is crucial. Each called variant partition the reads in groups. Keep only variants which partition occur frequently, because this cannot be chance. This way, only very robust variant are kept.
-
-4. *Separating the reads* Based on the robust variants, HairSplitter inspect each contig and determine if several distinct groups of reads align there. If it is the case, it means that several different versions of the contig exist.
-
-5. *Creating the new contigs* Create every new contig by polishing the existing contig using the several groups of reads.
-
-6. *Improving contiguity* Contigs are generally separated only locally. To improve contiguity, use the long reads that align on several contigs sequentially.
  
 # Citation
- HairSplitter is published in the Peer-Community Journal (PCJ): Faure, Roland; Lavenier, Dominique; Flot, Jean-François. HairSplitter: haplotype assembly from long, noisy reads. Peer Community Journal, Volume 4 (2024), article no. e96. doi : 10.24072/pcjournal.481. [https://peercommunityjournal.org/articles/10.24072/pcjournal.481/](https://peercommunityjournal.org/articles/10.24072/pcjournal.481/)
+ If you use AmpliconSplitter, please cite HairSplitter. HairSplitter is published in the Peer-Community Journal (PCJ): Faure, Roland; Lavenier, Dominique; Flot, Jean-François. HairSplitter: haplotype assembly from long, noisy reads. Peer Community Journal, Volume 4 (2024), article no. e96. doi : 10.24072/pcjournal.481. [https://peercommunityjournal.org/articles/10.24072/pcjournal.481/](https://peercommunityjournal.org/articles/10.24072/pcjournal.481/)
  
  
 
