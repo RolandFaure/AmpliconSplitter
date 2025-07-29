@@ -32,7 +32,6 @@ def parse_args(args_string=None):
     parser.add_argument("-u", "--rescue_snps", help="Consider automatically as true all SNPs shared by proportion u of the reads [0.33]", default=0.33, type=float, required=False)
     parser.add_argument("-q", "--min-read-quality", help="If reads have an average quality below this threshold, filter out (fastq input only) [0]", default=0, type=int)
     parser.add_argument("--resume", help="Resume from a previous run", action="store_true")
-    parser.add_argument("-P", "--polish-everything", help="Polish every contig with racon, even those where there is only one haplotype", action="store_true")
     parser.add_argument("-F", "--force", help="Force overwrite of output folder if it exists", action="store_true")
     parser.add_argument("-l", "--low-memory", help="Turn on the low-memory mode (at the expense of speed)", action="store_true")
     parser.add_argument("--no_clean", help="Don't clean the temporary files", action="store_true")
@@ -636,9 +635,7 @@ def main():
     
     gaffile = tmp_dir + "/reads_on_new_contig.gaf"
     zipped_GFA = tmp_dir + "/zipped_assembly.gfa"
-    polish_everything = "0"
-    if args.polish_everything:
-        polish_everything = "1"
+    polish_everything = "1"
 
     command = path_create_new_contigs + " " \
         + new_assembly + " " \
