@@ -4,8 +4,16 @@ Sometimes, highly similar amplicons get reported as a single collapsed amplicon.
 
 You can install HairSplitter through conda `conda install -c bioconda hairsplitter`
 
-## Dependencies
+## Manual installation
+### Quick conda dependencies
 
+The recommended way to install HairSplitter is to create and activate a conda environment with all dependencies: 
+```
+conda create -c bioconda -c conda-forge -c anaconda -n hairsplitter cmake gxx gcc python scipy numpy minimap2 minigraph=0.20 racon "samtools>=1.16" raven-assembler openmp
+conda activate hairsplitter
+
+conda install -c bioconda -c conda-forge medaka #only if you specifically want to use medaka /!\ Very heavy installation
+```
 ### List of dependencies
 
 - [minimap2](https://github.com/lh3/minimap2)
@@ -19,21 +27,11 @@ You can install HairSplitter through conda `conda install -c bioconda hairsplitt
 
 If Minimap2, Racon, Medaka or samtools are not in the PATH, their location should be specified through the `--path-to-minimap2`, `--path-to-racon`, `path-to-medaka` or `--path-to-samtools` options.
  
-### Quick conda dependencies
-
-The recommended way to install HairSplitter is to create and activate a conda environment with all dependencies: 
-```
-conda create -c bioconda -c conda-forge -c anaconda -n hairsplitter cmake gxx gcc python scipy numpy minimap2 minigraph=0.20 racon "samtools>=1.16" raven-assembler openmp
-conda activate hairsplitter
-
-conda install -c bioconda -c conda-forge medaka #only if you specifically want to use medaka /!\ Very heavy installation
-```
- 
 ## Download & Compilation
 
 To download and compile, run
 ```
-git clone https://github.com/RolandFaure/Hairsplitter.git
+git clone https://github.com/RolandFaure/Ampliconsplitter.git
 cd Hairsplitter/src/
 mkdir build && cd build
 cmake ..
@@ -45,17 +43,12 @@ cd ../../ && chmod +x hairsplitter.py
 
 ## Quick start
 
-Let's say `reads.fastq` (ONT reads) were used to build assembly `assembly.gfa` (with any assembler)(the assembly can be in gfa or fasta format). To improve/phase the assembly using `Hairsplitter`, run
+Let's say `reads.fastq` (ONT reads) were used to build amplicons stored in `amplicons.fa` (with any assembler)(the assembly can be in gfa or fasta format). To recover all amplicons, run
 ```
-python /path/to/hairsplitter/folder/hairsplitter.py -f reads.fastq -i assembly.gfa -x ont -o hairsplitter_out/
+python ampliconsplitter.py -f reads.fastq -r amplicons.fa -o hairsplitter_out/
 ```
 
-In the folder hairsplitter\_out, you will find the new assembly, named `hairsplitter_final_assembly.gfa`. Another generated file is `hairsplitter_summary.txt`, in which are written which contigs are duplicated and merged.
-
-You can test the installation on the mock instance provided and check that HairSplitter exits without problems.
-```
-python hairsplitter.py -i test/simple_mock/assembly.gfa -f test/simple_mock/mock_reads.fasta -o test_hairsplitter/ -F
-```
+In the folder hairsplitter\_out, you will find the new amplicons, named `hairsplitter_final_amplicons.fa`.
 
 ## Options
 
