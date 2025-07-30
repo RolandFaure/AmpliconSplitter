@@ -1,4 +1,4 @@
-Sometimes, highly similar amplicons get reported as a single collapsed amplicon - on the day this is written, [amplicon_sorter](https://github.com/avierstr/amplicon_sorter) reports a "limit for separating closely related species within a sample around 95 - 96%". AmpliconSplitter splits these amplicons to recover all the amplicons. AmpliconSplitter is based on [HairSplitter](github.com/rolandfaure/hairsplitter)
+Sometimes, highly similar amplicons get reported as a single collapsed amplicon - in July 2025, [amplicon_sorter](https://github.com/avierstr/amplicon_sorter) reports a "limit for separating closely related species within a sample around 95 - 96%". AmpliconSplitter splits these amplicons to recover all the amplicons. AmpliconSplitter is based on [HairSplitter](github.com/rolandfaure/hairsplitter)
 
 # Installation
 
